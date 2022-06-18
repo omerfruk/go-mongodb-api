@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"go-mongodb/database"
 	"go-mongodb/models"
+	"go-mongodb/viewmodel"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func CreateHobbie(m models.Hobbie) {
@@ -74,4 +76,28 @@ func DeleteHobbie(id string) error {
 		return err
 	}
 	return nil
+}
+
+func FindHobbiesUsers(hobbieName string) ([]models.User, error) {
+	matchStage := bson.D{{"$match", bson.D{{"name", hobbieName}}}}
+
+	lookupStage := bson.D{{"$lookup",
+		bson.D{{"from", "users"},
+			{"localField", "name"},
+			{"foreignField", "hobbie"},
+			{"as", "users"}}}}
+
+	showLoadedCursor, err := database.HobbieCollection.Aggregate(database.Ctx,
+		mongo.Pipeline{matchStage, lookupStage})
+	if err != nil {
+		return nil, err
+	}
+
+	var returnModel []viewmodel.HobbiesUsers
+	err = showLoadedCursor.All(database.Ctx, &returnModel)
+	if err != nil {
+		return nil, err
+
+	}
+	return returnModel[0].Users, err
 }
