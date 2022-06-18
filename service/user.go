@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func Create(m models.User) {
+func CreateUser(m models.User) {
 	result, err := database.UserCollection.InsertOne(context.TODO(), m)
 	if err != nil {
 		panic(err)
@@ -47,4 +47,31 @@ func GetUsers() ([]models.User, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func UpdateUser(id string, user models.User) error {
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	filter := bson.D{{"_id", objectId}}
+	update := bson.D{{"$set", bson.M{"name": user.Name, "surname": user.Surname, "age": user.Age}}}
+	_, err = database.UserCollection.UpdateOne(
+		database.Ctx,
+		filter,
+		update,
+	)
+	return err
+}
+
+func DeleteUser(id string) error {
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	_, err = database.UserCollection.DeleteOne(database.Ctx, bson.D{{"_id", objectId}})
+	if err != nil {
+		return err
+	}
+	return nil
 }
