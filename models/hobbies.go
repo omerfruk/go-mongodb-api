@@ -1,5 +1,5 @@
 package models
 
-type Hobbie struct {
+type Hobby struct {
 	Name string `bson:"name"`
 }

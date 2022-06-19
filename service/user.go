@@ -9,26 +9,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func CreateUser(m models.User) {
-	result, err := database.UserCollection.InsertOne(context.TODO(), m)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(result.InsertedID)
+func CreateUser(m models.User) error {
+	_, err := database.UserCollection.InsertOne(context.TODO(), m)
+	return err
 }
 
-func GetUserById(id string) models.User {
+func GetUserById(id string) (models.User, error) {
 	var user models.User
 	objectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
 	}
 	err = database.UserCollection.FindOne(database.Ctx, bson.D{{"_id", objectId}}).
 		Decode(&user)
-	if err != nil {
-		panic(err)
-	}
-	return user
+	return user, err
 }
 
 func GetUsers() ([]models.User, error) {

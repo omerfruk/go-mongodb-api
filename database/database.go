@@ -12,9 +12,9 @@ import (
 const uri = "mongodb://localhost:27017"
 
 var (
-	UserCollection   *mongo.Collection
-	HobbieCollection *mongo.Collection
-	Ctx              = context.TODO()
+	UserCollection  *mongo.Collection
+	HobbyCollection *mongo.Collection
+	Ctx             = context.TODO()
 )
 
 func Setup() {
@@ -33,5 +33,5 @@ func Setup() {
 	db := client.Database("go-mongodb")
 
 	UserCollection = db.Collection("users")
-	HobbieCollection = db.Collection("hobbie")
+	HobbyCollection = db.Collection("hobbie")
 }
