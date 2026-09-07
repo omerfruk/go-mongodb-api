@@ -1,8 +1,8 @@
 package viewmodel
 
-import "go-mongodb/models"
+import "github.com/omerfruk/go-mongodb-api/models"
 
 type HobbiesUsers struct {
-	UserHobbies string `bson:"name"`
-	Users       []models.User
+	UserHobbies string        `bson:"name" json:"hobby"`
+	Users       []models.User `bson:"users" json:"users"`
 }

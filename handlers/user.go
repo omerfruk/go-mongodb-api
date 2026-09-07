@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"go-mongodb/models"
-	"go-mongodb/service"
+	"github.com/omerfruk/go-mongodb-api/models"
+	"github.com/omerfruk/go-mongodb-api/service"
 )
 
 func GetUsers(c *fiber.Ctx) error {
@@ -27,7 +27,7 @@ func CreateUser(c *fiber.Ctx) error {
 	var user models.User
 	err := c.BodyParser(&user)
 	if err != nil {
-		return c.Status(500).SendString(err.Error())
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 	err = service.CreateUser(user)
 	if err != nil {
@@ -41,7 +41,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	var user models.User
 	err := c.BodyParser(&user)
 	if err != nil {
-		return c.Status(500).SendString(err.Error())
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 	err = service.UpdateUser(id, user)
 	if err != nil {

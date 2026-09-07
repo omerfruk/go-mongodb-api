@@ -2,36 +2,70 @@ package database
 
 import (
 	"context"
-	"fmt"
+	"os"
+	"time"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-// Connection URI
-const uri = "mongodb://localhost:27017"
-
 var (
+	Client          *mongo.Client
 	UserCollection  *mongo.Collection
 	HobbyCollection *mongo.Collection
-	Ctx             = context.TODO()
+	Ctx             = context.Background()
 )
 
-func Setup() {
-	// Create a new client and connect to the server
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
-	if err != nil {
-		panic(err)
-	}
-	// Ping the primary
-	err = client.Ping(context.TODO(), readpref.Primary())
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Successfully connected and pinged.")
+type config struct {
+	uri             string
+	database        string
+	userCollection  string
+	hobbyCollection string
+}
 
-	db := client.Database("go-mongodb")
+func configFromEnv() config {
+	return config{
+		uri:             envOrDefault("MONGODB_URI", "mongodb://localhost:27017"),
+		database:        envOrDefault("MONGODB_DATABASE", "go-mongodb"),
+		userCollection:  envOrDefault("MONGODB_USERS_COLLECTION", "users"),
+		hobbyCollection: envOrDefault("MONGODB_HOBBIES_COLLECTION", "hobbies"),
+	}
+}
 
-	UserCollection = db.Collection("users")
-	HobbyCollection = db.Collection("hobbie")
+func envOrDefault(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+
+	return fallback
+}
+
+func Setup() error {
+	cfg := configFromEnv()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.uri))
+	if err != nil {
+		return err
+	}
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		_ = client.Disconnect(ctx)
+		return err
+	}
+
+	Client = client
+	db := client.Database(cfg.database)
+	UserCollection = db.Collection(cfg.userCollection)
+	HobbyCollection = db.Collection(cfg.hobbyCollection)
+	return nil
+}
+
+func Disconnect(ctx context.Context) error {
+	if Client == nil {
+		return nil
+	}
+
+	return Client.Disconnect(ctx)
 }

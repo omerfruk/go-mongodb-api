@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"go-mongodb/models"
-	"go-mongodb/service"
+	"github.com/omerfruk/go-mongodb-api/models"
+	"github.com/omerfruk/go-mongodb-api/service"
 )
 
 func GetHobbies(c *fiber.Ctx) error {
@@ -36,7 +36,7 @@ func CreateHobby(c *fiber.Ctx) error {
 	var hobby models.Hobby
 	err := c.BodyParser(&hobby)
 	if err != nil {
-		return c.Status(500).SendString(err.Error())
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 	err = service.CreateHobby(hobby)
 	if err != nil {
@@ -50,7 +50,7 @@ func UpdateHobby(c *fiber.Ctx) error {
 	var hobby models.Hobby
 	err := c.BodyParser(&hobby)
 	if err != nil {
-		return c.Status(500).SendString(err.Error())
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 	err = service.UpdateHobby(id, hobby)
 	if err != nil {

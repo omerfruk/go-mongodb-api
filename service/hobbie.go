@@ -1,18 +1,16 @@
 package service
 
 import (
-	"context"
-	"fmt"
-	"go-mongodb/database"
-	"go-mongodb/models"
-	"go-mongodb/viewmodel"
+	"github.com/omerfruk/go-mongodb-api/database"
+	"github.com/omerfruk/go-mongodb-api/models"
+	"github.com/omerfruk/go-mongodb-api/viewmodel"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func CreateHobby(m models.Hobby) error {
-	_, err := database.HobbyCollection.InsertOne(context.TODO(), m)
+	_, err := database.HobbyCollection.InsertOne(database.Ctx, m)
 	return err
 }
 
@@ -20,7 +18,7 @@ func GetHobbyById(id string) (models.Hobby, error) {
 	var Hobby models.Hobby
 	objectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		fmt.Println(err.Error())
+		return Hobby, err
 	}
 	err = database.HobbyCollection.FindOne(database.Ctx, bson.D{{"_id", objectId}}).
 		Decode(&Hobby)
@@ -32,9 +30,9 @@ func GetHobbies() ([]models.Hobby, error) {
 	var hobbies []models.Hobby
 	cur, err := database.HobbyCollection.Find(database.Ctx, bson.D{})
 	if err != nil {
-		defer cur.Close(database.Ctx)
 		return nil, err
 	}
+	defer cur.Close(database.Ctx)
 	for cur.Next(database.Ctx) {
 		err = cur.Decode(&Hobby)
 		if err != nil {
@@ -42,7 +40,7 @@ func GetHobbies() ([]models.Hobby, error) {
 		}
 		hobbies = append(hobbies, Hobby)
 	}
-	return hobbies, nil
+	return hobbies, cur.Err()
 }
 
 func UpdateHobby(id string, hobbi models.Hobby) error {
@@ -78,15 +76,23 @@ func FindHobbiesUsers(HobbyName string) ([]models.User, error) {
 	lookupStage := bson.D{{"$lookup",
 		bson.D{{"from", "users"},
 			{"localField", "name"},
-			{"foreignField", "hobbie"},
+			{"foreignField", "hobby"},
 			{"as", "users"}}}}
 
 	showLoadedCursor, err := database.HobbyCollection.Aggregate(database.Ctx,
 		mongo.Pipeline{matchStage, lookupStage})
 	if err != nil {
-		fmt.Println(err.Error())
+		return nil, err
 	}
+	defer showLoadedCursor.Close(database.Ctx)
+
 	var returnModel []viewmodel.HobbiesUsers
-	err = showLoadedCursor.All(database.Ctx, &returnModel)
-	return returnModel[0].Users, err
+	if err := showLoadedCursor.All(database.Ctx, &returnModel); err != nil {
+		return nil, err
+	}
+	if len(returnModel) == 0 {
+		return []models.User{}, nil
+	}
+
+	return returnModel[0].Users, nil
 }
